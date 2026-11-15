@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Манат Квест 🦊</title>
+<style>
+:root{--bg:#120a2a;--card:#ffffff14;--line:#ffffff26;--text:#f4efff;--muted:#b6a9dd;--pink:#ff2d95;--cyan:#27e6ff;--gold:#ffc83d;--green:#3dff9a;--red:#ff5470;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:linear-gradient(135deg,#120a2a,#2a0a4a,#0a2a4a,#120a2a);background-size:300% 300%;animation:bg 14s ease infinite;min-height:100vh}
+@keyframes bg{50%{background-position:100% 100%}}
+#root{max-width:520px;margin:0 auto;padding:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;margin:10px 0;backdrop-filter:blur(6px)}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.fox{font-size:2.6rem;animation:bob 2s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-6px) rotate(-6deg)}}
+.pts{background:linear-gradient(90deg,var(--gold),#ff9a3d);color:#2b1700;font-weight:800;padding:6px 14px;border-radius:999px}
+.xp{height:12px;background:#ffffff1f;border-radius:99px;overflow:hidden;margin:6px 0}
+.xp>i{display:block;height:100%;background:linear-gradient(90deg,var(--cyan),var(--pink));transition:width .6s}
+nav{display:flex;gap:5px;margin:10px 0;overflow-x:auto}
+nav button{flex:1;white-space:nowrap;background:var(--card);border:1px solid var(--line);padding:9px 6px;font-size:.85rem}
+nav button.on{background:linear-gradient(90deg,var(--pink),#9d4dff);border-color:transparent}
+button{font:inherit;color:#fff;background:linear-gradient(90deg,var(--pink),#9d4dff);border:0;border-radius:12px;padding:10px 14px;cursor:pointer;font-weight:600;transition:transform .1s}
+button:active{transform:scale(.96)}
+button:disabled{opacity:.6}
+button.ghost{background:transparent;border:1px solid var(--red);color:var(--red)}
+button.opt{display:block;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);margin:7px 0;padding:12px}
+button.opt.right{background:#3dff9a33;border-color:var(--green)}button.opt.wrong{background:#ff547033;border-color:var(--red)}
+input,select{font:inherit;width:100%;padding:10px;margin:5px 0;border:1px solid var(--line);border-radius:12px;background:#ffffff10;color:var(--text)}
+select option{color:#000}
+img.t{width:100%;max-height:220px;object-fit:cover;border-radius:12px;margin-bottom:8px}
+.muted{color:var(--muted);font-size:.9rem}.ok{color:var(--green);font-weight:700}.bad{color:var(--red);font-weight:700}
+.timer{height:10px;background:#ffffff1f;border-radius:99px;overflow:hidden;margin:8px 0}.timer>i{display:block;height:100%;width:100%;background:var(--green)}
+.badge{display:inline-block;background:#ffffff1a;border:1px solid var(--line);border-radius:99px;padding:4px 10px;margin:3px 3px 0 0;font-size:.82rem}
+.wheelbox{position:relative;width:250px;height:270px;margin:0 auto}
+.ptr{position:absolute;top:0;left:50%;transform:translateX(-50%);font-size:2rem;z-index:3}
+#wheel{position:absolute;top:28px;left:5px;width:240px;height:240px;border-radius:50%;border:5px solid #fff;box-shadow:0 0 30px var(--pink);background:conic-gradient(#ff2d95 0 60deg,#ffc83d 60deg 120deg,#27e6ff 120deg 180deg,#3dff9a 180deg 240deg,#9d4dff 240deg 300deg,#ff9a3d 300deg 360deg)}
+#wheel span{position:absolute;left:50%;top:50%;font-weight:900;color:#1a0b33;font-size:1.2rem}
+.row{display:flex;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#000c;border:1px solid var(--line);padding:10px 16px;border-radius:99px;z-index:20}
+.fall{position:fixed;top:-30px;font-size:1.6rem;animation:fall linear forwards;pointer-events:none;z-index:30}
+@keyframes fall{to{transform:translateY(110vh) rotate(540deg)}}
+</style>
+</head>
+<body>
+<div id="root"><p class="muted">Загрузка…</p></div>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+// ===== FIREBASE: вставь свои данные из консоли Firebase =====
+const FIREBASE_CONFIG={apiKey:"AIzaSyDk9rFGqPdsHy8Rlc1ycyikJVFGu9XaWaw",authDomain:"manat-quest.firebaseapp.com",projectId:"manat-quest",storageBucket:"manat-quest.firebasestorage.app",messagingSenderId:"289190152517",appId:"1:289190152517:web:cad86b7bed99e2d70ad62c"};
+const ADMIN_EMAIL="bayhancxik009@gmail.com"; // только этот Google-аккаунт будет админом
+// ===== НАСТРОЙКИ =====
+const POINTS_PER_MANAT=100, MIN_MANAT=1, TIME_LIMIT=20; // секунд на вопрос
+const WHEEL=[5,10,15,20,30,50];
+// =====================
+const root=document.getElementById('root');
+let auth,db,uid,gname='',unsubs=[],isAdmin=false,profile=null,tests=[],board=[],withdrawals=[],paid={},view='play',openTest=null,pRef,playing=false,timerId=null;
+function h(tag,props,...kids){const e=document.createElement(tag);for(const k in(props||{})){if(k==='on')for(const ev in props.on)e.addEventListener(ev,props.on[ev]);else if(k==='class')e.className=props[k];else if(k==='style')e.style.cssText=props[k];else e[k]=props[k];}kids.flat().forEach(c=>{if(c!=null&&c!==false)e.append(c)});return e;}
+const fmt=t=>new Date(t).toLocaleString('ru-RU'),today=()=>new Date().toISOString().slice(0,10),yest=()=>new Date(Date.now()-864e5).toISOString().slice(0,10);
+const lvl=xp=>Math.floor(Math.sqrt(xp/40))+1;
+function beep(f){try{const c=new AudioContext(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=f;g.gain.value=.05;o.start();o.stop(c.currentTime+.15)}catch(e){}}
+function confetti(){const em=['🎉','✨','💰','⭐','💖','🪙'];for(let i=0;i<36;i++)setTimeout(()=>{const d=h('div',{class:'fall',textContent:em[i%6]});d.style.left=Math.random()*100+'vw';d.style.animationDuration=(2+Math.random()*2.5)+'s';document.body.append(d);setTimeout(()=>d.remove(),5000)},i*50);}
+function toast(t){const e=h('div',{class:'toast',textContent:t});document.body.append(e);setTimeout(()=>e.remove(),3200);}
+async function save(){await pRef.set(profile);db.doc('board/'+uid).set({name:profile.name,xp:profile.xp,level:lvl(profile.xp)}).catch(()=>{});}
+function soft(){if(!playing)render();}
+
+function init(){
+  if(FIREBASE_CONFIG.apiKey==='ВСТАВЬ'){render();return;}
+  firebase.initializeApp(FIREBASE_CONFIG);auth=firebase.auth();db=firebase.firestore();
+  auth.onAuthStateChanged(u=>{if(!u){uid=null;profile=null;unsubs.forEach(f=>f());unsubs=[];render();}else start(u);});
+  render();
+}
+async function start(u){
+  try{
+    uid=u.uid;gname=u.displayName||'';isAdmin=(u.email||'').toLowerCase()===ADMIN_EMAIL.toLowerCase();
+    pRef=db.doc('users/'+uid);
+    const s=await pRef.get();profile=s.exists?s.data():null;
+    if(profile){profile.xp=profile.xp||0;profile.streak=profile.streak||0;profile.best=profile.best||0;profile.dayStreak=profile.dayStreak||0;profile.done=profile.done||[];profile.requests=profile.requests||[];await dailyLogin();}
+    unsubs.forEach(f=>f());unsubs=[];
+    unsubs.push(db.collection('tests').onSnapshot(sn=>{tests=sn.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.created||0)-(a.created||0));soft();},()=>soft()));
+    unsubs.push(db.collection('board').onSnapshot(sn=>{board=sn.docs.map(d=>d.data()).sort((a,b)=>b.xp-a.xp).slice(0,10);soft();},()=>{}));
+    unsubs.push(db.collection('paid').onSnapshot(sn=>{paid={};sn.docs.forEach(d=>paid[d.id]=true);soft();},()=>{}));
+    if(isAdmin)unsubs.push(db.collection('withdrawals').onSnapshot(sn=>{withdrawals=sn.docs.map(d=>({uid:d.id,...d.data()}));soft();},()=>{}));
+    render();
+  }catch(e){alert('Ошибка загрузки: '+e.message);}
+}
+function loginView(){
+  root.append(h('div',{class:'card',style:'text-align:center'},h('div',{class:'fox',textContent:'🦊'}),h('h2',{},'Манат Квест'),
+    h('p',{class:'muted'},'Войди через Google, чтобы твои баллы и уровень сохранились.'),
+    h('button',{on:{click:()=>auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>alert('Не удалось войти: '+e.message))}},'Войти через Google 🔐')));
+}
+function shrink(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,800/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=im.width*k;c.height=im.height*k;c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',.7))};im.onerror=rej;im.src=r.result};r.onerror=rej;r.readAsDataURL(f)});}
+async function dailyLogin(){
+  if(profile.lastDay===today())return;
+  profile.dayStreak=profile.lastDay===yest()?profile.dayStreak+1:1;profile.lastDay=today();
+  const b=Math.min(profile.dayStreak,7)*2;profile.points+=b;profile.xp+=b;await save();
+  setTimeout(()=>{toast('📅 День '+profile.dayStreak+' подряд! +'+b+' баллов');confetti();},600);
+}
+
+function render(){
+  clearInterval(timerId);root.innerHTML='';
+  if(FIREBASE_CONFIG.apiKey==='ВСТАВЬ'){root.append(h('div',{class:'card'},h('h3',{},'Нужна настройка'),h('p',{class:'muted'},'Вставь данные Firebase в начале файла.')));return;}
+  if(!uid)return loginView();
+  if(!profile)return regView();
+  const L=lvl(profile.xp),base=40*(L-1)**2,next=40*L*L,pct=Math.min(100,(profile.xp-base)/(next-base)*100);
+  const badges=[[profile.done.length>=1,'🥉 Первый тест'],[profile.best>=5,'🔥 Серия 5'],[profile.dayStreak>=3,'📅 3 дня подряд'],[L>=5,'💎 Уровень 5'],[profile.requests.length>=1,'💸 Первый вывод']].filter(b=>b[0]);
+  root.append(h('div',{class:'card'},
+    h('div',{class:'top'},h('div',{class:'top'},h('span',{class:'fox',textContent:'🦊'}),h('div',{},h('b',{},profile.name),h('div',{class:'muted'},'Уровень '+L+' · 🔥 серия '+profile.streak))),h('span',{class:'pts',textContent:'🪙 '+profile.points})),
+    h('div',{class:'xp'},h('i',{style:'width:'+pct+'%'})),h('div',{class:'muted'},'XP: '+profile.xp+' / '+next),
+    badges.map(b=>h('span',{class:'badge',textContent:b[1]}))));
+  const tabs=[['play','🎮 Игра'],['wheel','🎡 Колесо'],['top','🏆 Топ'],['wallet','💰 Вывод']];if(isAdmin)tabs.push(['admin','⚙️']);tabs.push(['out','🚪']);
+  root.append(h('nav',{},tabs.map(([k,l])=>h('button',{class:view===k?'on':'',on:{click:()=>{if(playing&&!confirm('Выйти? Попытка сгорит.'))return;playing=false;view=k;openTest=null;render();}}},l))));
+  ({play:()=>openTest?testView():testsView(),wheel:wheelView,top:topView,wallet:walletView,admin:()=>isAdmin&&adminView(),out:()=>{view='play';auth.signOut();}})[view]();
+}
+
+function regView(){
+  const inp=h('input',{placeholder:'Имя или ник',maxLength:30,value:gname});
+  root.append(h('div',{class:'card',style:'text-align:center'},h('div',{class:'fox',textContent:'🦊'}),h('h2',{},'Манат Квест'),h('p',{class:'muted'},'Проходи тесты, крути колесо, качай уровень и меняй баллы на манаты!'),inp,
+    h('button',{on:{click:async()=>{const n=inp.value.trim();if(n.length<2)return alert('Введи имя или ник');profile={name:n,points:0,xp:0,done:[],requests:[],streak:0,best:0,dayStreak:0};await save();await dailyLogin();render();}}},'Начать игру 🚀')));
+}
+
+function testsView(){
+  if(!tests.length)root.append(h('p',{class:'muted'},'Пока нет тестов. Заходи позже!'));
+  tests.forEach(t=>{const done=profile.done.includes(t.id);
+    root.append(h('div',{class:'card'},t.image?h('img',{class:'t',src:t.image}):null,h('h3',{},t.title),
+      h('div',{class:'muted'},'до +'+Math.round(t.points*1.5)+' баллов (быстрее = больше) · ⏱ '+TIME_LIMIT+' сек'),
+      done?h('p',{class:'ok'},'✅ Пройден'):h('button',{on:{click:()=>{openTest=t;render();}}},'Играть ▶')));});
+}
+
+function testView(){
+  const t=openTest;let finished=false;playing=true;const end=Date.now()+TIME_LIMIT*1000;
+  const bar=h('i'),res=h('div'),btns=t.options.map((o,i)=>h('button',{class:'opt',textContent:o,on:{click:()=>answer(i)}}));
+  function answer(i){
+    if(finished)return;finished=true;clearInterval(timerId);
+    const left=Math.max(0,end-Date.now())/(TIME_LIMIT*1000),ok=i===t.correct;
+    btns.forEach((b,j)=>{b.disabled=true;if(j===t.correct)b.classList.add('right');else if(j===i)b.classList.add('wrong');});
+    profile.done.push(t.id);const L0=lvl(profile.xp);
+    if(ok){const sp=1+.5*left,cb=Math.min(2,1+.1*profile.streak),gain=Math.round(t.points*sp*cb);
+      profile.points+=gain;profile.xp+=gain;profile.streak++;profile.best=Math.max(profile.best,profile.streak);beep(880);confetti();
+      res.append(h('p',{class:'ok',textContent:'✅ Верно! +'+gain+' 🪙  (⚡ x'+sp.toFixed(2)+', 🔥 x'+cb.toFixed(1)+')'}));
+    }else{profile.streak=0;beep(220);res.append(h('p',{class:'bad',textContent:i<0?'⏰ Время вышло! Серия сброшена.':'❌ Неверно. Серия сброшена.'}));}
+    if(lvl(profile.xp)>L0)res.append(h('p',{class:'ok',textContent:'🎊 НОВЫЙ УРОВЕНЬ: '+lvl(profile.xp)+'!'}));
+    res.append(h('button',{on:{click:()=>{playing=false;openTest=null;render();}}},'Дальше ➜'));
+    save();
+  }
+  timerId=setInterval(()=>{const l=Math.max(0,end-Date.now())/(TIME_LIMIT*1000);bar.style.width=l*100+'%';bar.style.background=l<.3?'var(--red)':l<.6?'var(--gold)':'var(--green)';if(l<=0)answer(-1);},100);
+  root.append(h('div',{class:'card'},t.image?h('img',{class:'t',src:t.image}):null,h('div',{class:'timer'},bar),h('h3',{},t.question),btns,res));
+}
+
+function wheelView(){
+  const can=profile.lastSpin!==today();
+  const wheel=h('div',{id:'wheel'},WHEEL.map((v,i)=>h('span',{textContent:v,style:'transform:translate(-50%,-50%) rotate('+(i*60+30)+'deg) translateY(-85px)'})));
+  const btn=h('button',{disabled:!can,textContent:can?'КРУТИТЬ 🎡':'Приходи завтра 🌙',on:{click:()=>{
+    btn.disabled=true;playing=true;const idx=Math.floor(Math.random()*6);
+    wheel.style.transition='transform 4s cubic-bezier(.15,.7,.1,1)';wheel.style.transform='rotate('+(360*6-(idx*60+30))+'deg)';
+    setTimeout(async()=>{profile.points+=WHEEL[idx];profile.xp+=WHEEL[idx];profile.lastSpin=today();beep(660);confetti();toast('🎡 Выпало +'+WHEEL[idx]+' баллов!');playing=false;await save();render();},4200);}}});
+  root.append(h('div',{class:'card',style:'text-align:center'},h('h3',{},'Колесо удачи'),h('p',{class:'muted'},'Одно вращение в день'),h('div',{class:'wheelbox'},h('div',{class:'ptr',textContent:'🔻'}),wheel),btn));
+}
+
+function topView(){
+  root.append(h('div',{class:'card'},h('h3',{},'🏆 Топ игроков'),board.length?board.map((b,i)=>h('div',{class:'row'},h('b',{textContent:['🥇','🥈','🥉'][i]||(i+1)+'.'}),h('span',{style:'flex:1',textContent:b.name}),h('span',{class:'muted',textContent:'ур. '+b.level+' · '+b.xp+' XP'}))):h('p',{class:'muted'},'Пока пусто — стань первым!')));
+}
+
+function walletView(){
+  const manat=Math.floor(profile.points/POINTS_PER_MANAT),phone=h('input',{type:'tel',placeholder:'Твой номер телефона',inputMode:'tel'});
+  root.append(h('div',{class:'card'},h('h3',{},'💰 Обмен баллов'),h('p',{},POINTS_PER_MANAT+' баллов = 1 манат'),h('p',{},'Доступно: ',h('b',{},manat+' манат')),phone,
+    h('button',{on:{click:async()=>{
+      const num=phone.value.trim();
+      if(manat<MIN_MANAT)return alert('Недостаточно баллов. Минимум: '+MIN_MANAT*POINTS_PER_MANAT);
+      if(num.replace(/\D/g,'').length<7)return alert('Введи номер телефона');
+      if(!confirm('Обменять '+manat*POINTS_PER_MANAT+' баллов на '+manat+' манат?\nНомер: '+num))return;
+      try{profile.points-=manat*POINTS_PER_MANAT;profile.requests.push({manat,phone:num,at:Date.now()});
+        await db.doc('withdrawals/'+uid).set({name:profile.name,phone:num,requests:profile.requests});await save();confetti();alert('Заявка отправлена ✅');
+      }catch(e){alert('Не удалось отправить заявку. Попробуй ещё раз.');}
+      render();}}},'Обменять на манат')));
+  if(profile.requests.length)root.append(h('div',{class:'card'},h('h3',{},'Мои заявки'),profile.requests.slice().reverse().map(r=>h('p',{class:'muted',textContent:fmt(r.at)+' — '+r.manat+' манат — '+r.phone+(paid[uid+'_'+r.at]?' ✅':'')}))));
+}
+
+function adminView(){
+  const title=h('input',{placeholder:'Название теста'}),file=h('input',{type:'file',accept:'image/*'}),q=h('input',{placeholder:'Вопрос'}),
+    opts=[1,2,3,4].map(i=>h('input',{placeholder:'Вариант '+i+(i>2?' (необязательно)':'')})),
+    cor=h('select',{},[1,2,3,4].map(i=>h('option',{value:i-1,textContent:'Правильный: вариант '+i}))),pts=h('input',{type:'number',placeholder:'Баллов за тест',value:10,min:1});
+  root.append(h('div',{class:'card'},h('h3',{},'➕ Новый тест'),title,h('div',{class:'muted'},'Фото (необязательно):'),file,q,opts,cor,pts,
+    h('button',{on:{click:async ev=>{
+      const options=opts.map(o=>o.value.trim()).filter(Boolean),correct=+cor.value;
+      if(!title.value.trim()||!q.value.trim()||options.length<2||correct>=options.length||!(+pts.value>0))return alert('Заполни название, вопрос, минимум 2 варианта, правильный ответ и баллы');
+      ev.target.disabled=true;
+      try{let image=null;if(file.files[0])image=await shrink(file.files[0]);
+        await db.collection('tests').add({title:title.value.trim(),question:q.value.trim(),options,correct,points:+pts.value,image,created:Date.now()});alert('Тест добавлен ✅');
+      }catch(e){alert('Ошибка: '+(e.message||'не удалось сохранить'));}
+      render();}}},'Добавить тест')));
+  root.append(h('div',{class:'card'},h('h3',{},'📝 Мои тесты ('+tests.length+')'),tests.map(t=>h('div',{class:'row'},h('span',{style:'flex:1',textContent:t.title+' (+'+t.points+')'}),h('button',{class:'ghost',textContent:'Удалить',on:{click:async()=>{if(confirm('Удалить тест?'))await db.doc('tests/'+t.id).delete();}}})))));
+  const rows=[];withdrawals.forEach(w=>(w.requests||[]).forEach(r=>rows.push({...r,name:w.name,uid:w.uid})));rows.sort((a,b)=>b.at-a.at);
+  root.append(h('div',{class:'card'},h('h3',{},'💸 Заявки на вывод ('+rows.length+')'),rows.length?null:h('p',{class:'muted'},'Заявок пока нет.'),
+    rows.map(r=>{const id=r.uid+'_'+r.at;return h('div',{class:'card'},h('b',{textContent:r.name}),h('div',{textContent:'📱 '+r.phone}),h('div',{textContent:'💰 '+r.manat+' манат'}),h('div',{class:'muted',textContent:fmt(r.at)}),
+      paid[id]?h('p',{class:'ok'},'✅ Оплачено'):h('button',{on:{click:async()=>{await db.doc('paid/'+id).set({at:Date.now()});}}},'Отметить оплаченным'));})));
+}
+init();
+</script>
+</body>
+</html>
