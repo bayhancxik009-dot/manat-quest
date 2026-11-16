@@ -73,6 +73,11 @@ button.gift{width:100%;background:#1d2b66;border:1px solid #c6f43266;color:#c6f4
 .mc{aspect-ratio:1;font-size:1.8rem;padding:0;background:#1d2b66;border:1px solid var(--line)}.mc.done{background:#c6f43233;opacity:.7}
 .pad{height:220px;border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:700;background:#1d2b66;text-align:center;padding:12px;cursor:pointer;user-select:none;margin:10px 0}
 .pad.red{background:#c0392b}.pad.green{background:#2ecc71;color:#022}
+.hero{background:linear-gradient(135deg,#2a5bd7,#1b8a4e);border-radius:22px;padding:22px 18px;text-align:center;margin:4px 0 12px;box-shadow:0 10px 30px #0006}
+.hero .big{font-size:2.8rem;font-weight:800;margin:6px 0}
+.prog{height:10px;background:#ffffff33;border-radius:99px;overflow:hidden;margin:12px 0 8px}.prog>i{display:block;height:100%;background:#c6f432;border-radius:99px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}.chip{background:#1d2b66;border:1px solid var(--line);padding:10px 18px;border-radius:999px;font-size:1rem}.chip.sel{background:#c6f432;color:#1b2a00}
+.pill{padding:5px 11px;border-radius:99px;font-size:.8rem;font-weight:700;white-space:nowrap}.pill.ok2{background:#c6f43233;color:#c6f432}.pill.wait{background:#ffc83d33;color:#ffc83d}
 </style>
 </head>
 <body>
@@ -391,20 +396,43 @@ function topView(){
 }
 
 function walletView(){
-  const manat=Math.floor(profile.points/POINTS_PER_MANAT),phone=h('input',{type:'tel',placeholder:'Твой номер телефона',inputMode:'tel'});
-  root.append(h('div',{class:'card'},h('p',{},POINTS_PER_MANAT+' баллов = 1 манат'),h('p',{},'Доступно: ',h('b',{},manat+' манат')),phone,
-    h('button',{on:{click:async()=>{
+  const PPM=POINTS_PER_MANAT,avail=Math.floor(profile.points/PPM),paidOf=r=>!!paid[uid+'_'+r.at];
+  const pending=profile.requests.find(r=>!paidOf(r)),total=profile.requests.filter(paidOf).reduce((a,r)=>a+r.manat,0);
+  const dim='opacity:.85';
+  root.append(h('div',{class:'hero'},h('div',{style:dim,textContent:'Доступно к выводу'}),h('div',{class:'big',textContent:avail+' манат'}),
+    h('div',{style:dim,textContent:'🪙 '+profile.points+' баллов · '+PPM+' баллов = 1 манат'}),
+    h('div',{class:'prog'},h('i',{style:'width:'+(avail>=MIN_MANAT?100:Math.min(100,profile.points/(MIN_MANAT*PPM)*100))+'%'})),
+    h('div',{style:dim+';font-size:.85rem',textContent:avail>=MIN_MANAT?'Можно выводить ✅':'До минимума ('+MIN_MANAT+' манат) осталось '+(MIN_MANAT*PPM-profile.points)+' баллов'})));
+  if(pending){
+    root.append(h('div',{class:'card',style:'text-align:center'},h('div',{style:'font-size:2.2rem',textContent:'⏳'}),h('h3',{textContent:'Заявка на '+pending.manat+' манат отправлена'}),
+      h('p',{class:'muted',textContent:'Номер: '+pending.phone+'. Деньги переводятся вручную. Когда админ оплатит, статус станет «Оплачено».'})));
+  }else if(avail<MIN_MANAT){
+    root.append(h('div',{class:'card',style:'text-align:center'},h('div',{style:'font-size:2.2rem',textContent:'🪙'}),h('h3',{textContent:'Пока нечего выводить'}),
+      h('p',{class:'muted',textContent:'Проходи тесты, крути колесо и играй, чтобы накопить баллы.'}),h('button',{class:'lime',textContent:'▶ Играть',on:{click:()=>go('play')}})));
+  }else{
+    let sel=null;const chips=[],btn=h('button',{class:'lime',style:'width:100%;padding:16px;font-size:1.1rem',textContent:'Выбери сумму',disabled:true}),note=h('p',{class:'muted',style:'margin:8px 0 0'});
+    const pick=v=>{sel=v;chips.forEach(c=>c.classList.toggle('sel',+c.dataset.v===v));btn.disabled=false;btn.textContent='Вывести '+v+' манат';note.textContent='Спишется '+v*PPM+' баллов';};
+    const vals=[...new Set([...[1,2,5,10].filter(v=>v>=MIN_MANAT&&v<avail),avail])];
+    vals.forEach(v=>{const c=h('button',{class:'chip',textContent:v===avail?'Макс · '+v:String(v),on:{click:()=>pick(v)}});c.dataset.v=v;chips.push(c);});
+    const phone=h('input',{type:'tel',inputMode:'tel',placeholder:'Номер телефона',value:profile.phone||''});
+    btn.onclick=async()=>{
       const num=phone.value.trim();
-      if(manat<MIN_MANAT)return alert('Недостаточно баллов. Минимум: '+MIN_MANAT*POINTS_PER_MANAT);
+      if(!sel)return alert('Выбери сумму');
       if(num.replace(/\D/g,'').length<7)return alert('Введи номер телефона');
-      if(!confirm('Обменять '+manat*POINTS_PER_MANAT+' баллов на '+manat+' манат?\nНомер: '+num))return;
-      try{profile.points-=manat*POINTS_PER_MANAT;profile.requests.push({manat,phone:num,at:Date.now()});
-        await db.doc('withdrawals/'+uid).set({name:profile.name,phone:num,requests:profile.requests});await save();confetti();alert('Заявка отправлена ✅');
-      }catch(e){alert('Не удалось отправить заявку. Попробуй ещё раз.');}
-      render();}}},'Обменять на манат')));
-  if(profile.requests.length)root.append(h('div',{class:'card'},h('h3',{},'Мои заявки'),profile.requests.slice().reverse().map(r=>h('p',{class:'muted',textContent:fmt(r.at)+' — '+r.manat+' манат — '+r.phone+(paid[uid+'_'+r.at]?' ✅':'')}))));
+      if(!confirm('Вывести '+sel+' манат?\nНомер: '+num+'\nПроверь цифры, деньги придут на этот номер.'))return;
+      btn.disabled=true;const req={manat:sel,phone:num,at:Date.now()};
+      profile.points-=sel*PPM;profile.requests.push(req);profile.phone=num;
+      try{await save();await db.doc('withdrawals/'+uid).set({name:profile.name,phone:num,requests:profile.requests});confetti();toast('✅ Заявка отправлена');}
+      catch(e){profile.points+=sel*PPM;profile.requests.pop();try{await save();}catch(_){}alert('Не удалось отправить заявку. Баллы возвращены, попробуй ещё раз.');}
+      render();};
+    root.append(h('div',{class:'card'},h('b',{textContent:'1. Сколько вывести'}),h('div',{class:'chips',style:'margin-top:10px'},chips)),
+      h('div',{class:'card'},h('b',{textContent:'2. Номер для перевода'}),phone,h('p',{class:'muted',style:'margin:4px 0 0',textContent:'Деньги придут на этот номер. Проверь цифры.'})),
+      btn,note);
+  }
+  if(profile.requests.length)root.append(h('div',{class:'card'},h('div',{class:'top'},h('b',{textContent:'История'}),h('span',{class:'muted',textContent:'Выплачено: '+total+' манат'})),
+    profile.requests.slice().reverse().map(r=>h('div',{class:'row'},h('div',{style:'flex:1;min-width:0'},h('b',{textContent:r.manat+' манат'}),h('div',{class:'muted',textContent:fmt(r.at)+' · '+r.phone})),
+      h('span',{class:'pill '+(paidOf(r)?'ok2':'wait'),textContent:paidOf(r)?'✅ Оплачено':'⏳ Ожидает'})))));
 }
-
 function adminView(){
   const title=h('input',{placeholder:'Название теста'}),file=h('input',{type:'file',accept:'image/*'}),q=h('input',{placeholder:'Вопрос'}),
     opts=[1,2,3,4].map(i=>h('input',{placeholder:'Вариант '+i+(i>2?' (необязательно)':'')})),
