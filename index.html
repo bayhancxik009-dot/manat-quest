@@ -68,6 +68,11 @@ button.gift{width:100%;background:#1d2b66;border:1px solid #c6f43266;color:#c6f4
 .tb{background:none;border-radius:14px;padding:4px 0;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px;font-weight:500}
 .tb span{font-size:1.35rem}.tb small{font-size:.7rem}.tb.on{color:#c6f432}
 .tbc{width:68px;height:68px;border-radius:50%;margin:-36px auto 0;background:#c6f432;font-size:1.9rem;box-shadow:0 0 22px #c6f43299;border:5px solid #0a1235;padding:0;color:#000}
+.bar{display:flex;justify-content:space-between;align-items:center;margin:4px 0 12px}.bar h2{margin:0;font-size:1.3rem}
+.mgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}
+.mc{aspect-ratio:1;font-size:1.8rem;padding:0;background:#1d2b66;border:1px solid var(--line)}.mc.done{background:#c6f43233;opacity:.7}
+.pad{height:220px;border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:700;background:#1d2b66;text-align:center;padding:12px;cursor:pointer;user-select:none;margin:10px 0}
+.pad.red{background:#c0392b}.pad.green{background:#2ecc71;color:#022}
 </style>
 </head>
 <body>
@@ -86,6 +91,7 @@ const COIN_WIN=10, COIN_LOSE=5; // монета: угадал +10, не угад
 let coinMsg="";
 // =====================
 const root=document.getElementById('root');
+try{const r=new URLSearchParams(location.search).get('ref');if(r)localStorage.setItem('ref',r);}catch(e){}
 let chat=[],chatBox=null,lastSent=0,auth,db,uid,gname='',unsubs=[],isAdmin=false,profile=null,tests=[],board=[],withdrawals=[],paid={},view='play',openTest=null,pRef,playing=false,timerId=null;
 function h(tag,props,...kids){const e=document.createElement(tag);for(const k in(props||{})){if(k==='on')for(const ev in props.on)e.addEventListener(ev,props.on[ev]);else if(k==='class')e.className=props[k];else if(k==='style')e.style.cssText=props[k];else e[k]=props[k];}kids.flat().forEach(c=>{if(c!=null&&c!==false)e.append(c)});return e;}
 const fmt=t=>new Date(t).toLocaleString('ru-RU'),today=()=>new Date().toISOString().slice(0,10),yest=()=>new Date(Date.now()-864e5).toISOString().slice(0,10);
@@ -107,7 +113,7 @@ async function start(u){
     uid=u.uid;gname=u.displayName||'';isAdmin=(u.email||'').toLowerCase()===ADMIN_EMAIL.toLowerCase();
     pRef=db.doc('users/'+uid);
     const s=await pRef.get();profile=s.exists?s.data():null;
-    if(profile){profile.xp=profile.xp||0;profile.streak=profile.streak||0;profile.best=profile.best||0;profile.dayStreak=profile.dayStreak||0;profile.done=profile.done||[];profile.requests=profile.requests||[];await dailyLogin();}
+    if(profile){profile.xp=profile.xp||0;profile.streak=profile.streak||0;profile.best=profile.best||0;profile.dayStreak=profile.dayStreak||0;profile.done=profile.done||[];profile.requests=profile.requests||[];await dailyLogin();await refTasks();}
     unsubs.forEach(f=>f());unsubs=[];
     unsubs.push(db.collection('tests').onSnapshot(sn=>{tests=sn.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.created||0)-(a.created||0));soft();},()=>soft()));
     unsubs.push(db.collection('board').onSnapshot(sn=>{board=sn.docs.map(d=>d.data()).sort((a,b)=>b.xp-a.xp).slice(0,10);soft();},()=>{}));
@@ -142,28 +148,26 @@ function render(){
   if(!profile)return regView();
   const L=lvl(profile.xp),base=40*(L-1)**2,next=40*L*L,pct=Math.min(100,(profile.xp-base)/(next-base)*100);
   const badges=[[profile.done.length>=1,'🥉 Первый тест'],[profile.best>=5,'🔥 Серия 5'],[profile.dayStreak>=3,'📅 3 дня подряд'],[L>=5,'💎 Уровень 5'],[profile.requests.length>=1,'💸 Первый вывод']].filter(b=>b[0]);
-  const manat=Math.floor(profile.points/POINTS_PER_MANAT);
-  root.append(h('div',{class:'hdr'},h('div',{class:'ava',textContent:(profile.name||'?')[0].toUpperCase()}),
-    h('div',{style:'flex:1;min-width:0'},h('b',{class:'nm',textContent:profile.name}),h('div',{class:'muted',textContent:'🔥 серия '+profile.streak+' · 📅 '+profile.dayStreak+' дн.'})),
-    h('span',{class:'lvl',textContent:'★ '+L+' уровень'})));
-  root.append(h('div',{class:'bal'},h('div',{class:'muted',textContent:'Твой баланс'}),h('div',{class:'big',textContent:'🪙 '+profile.points}),
-    h('div',{class:'muted',textContent:'≈ '+manat+' манат · '+POINTS_PER_MANAT+' баллов = 1 манат'}),
-    h('div',{class:'xp'},h('i',{style:'width:'+pct+'%'})),h('div',{class:'muted',textContent:'XP: '+profile.xp+' / '+next})));
-  root.append(h('div',{class:'quick'},h('button',{class:'lime',textContent:'▶ Играть',on:{click:()=>go('play')}}),h('button',{textContent:'⬇ Вывести',on:{click:()=>go('wallet')}})));
+  const titles={play:'🎮 Тесты',top:'🏆 Топ игроков',coin:'🪙 Орёл и решка',chat:'💬 Общий чат',wheel:'🎡 Колесо удачи',wallet:'💰 Вывод',admin:'⚙️ Админ-панель',acct:'👤 Аккаунт',games:'🎲 Мини-игры',guess:'🔢 Угадай число',memory:'🧠 Память',react:'⚡ Реакция',friends:'👥 Друзья'};
+  root.append(h('div',{class:'bar'},h('h2',{textContent:titles[view]||''}),h('span',{class:'pts',textContent:'🪙 '+profile.points})));
+  if(['coin','guess','memory','react'].includes(view))root.append(h('button',{class:'gift',textContent:'← К играм',on:{click:()=>go('games')}}));
   if(view==='play'&&!openTest&&profile.lastSpin!==today())root.append(h('button',{class:'gift',textContent:'🎁 Бесплатное колесо ждёт тебя!',on:{click:()=>go('wheel')}}));
-  ({play:()=>openTest?testView():testsView(),wheel:wheelView,acct:acctView,coin:coinView,top:topView,chat:chatView,wallet:walletView,admin:()=>isAdmin&&adminView(),out:()=>{view='play';auth.signOut();}})[view]();
-  const act=['wheel','wallet','admin'].includes(view)?'acct':view;
+  ({play:()=>openTest?testView():testsView(),wheel:wheelView,acct:acctView,games:gamesView,guess:guessView,memory:memoryView,react:reactView,friends:friendsView,coin:coinView,top:topView,chat:chatView,wallet:walletView,admin:()=>isAdmin&&adminView(),out:()=>{view='play';auth.signOut();}})[view]();
+  const act=['wheel','wallet','admin','friends'].includes(view)?'acct':view;
   const item=(k,ic,lb)=>h('button',{class:'tb'+(act===k?' on':''),on:{click:()=>go(k)}},h('span',{textContent:ic}),h('small',{textContent:lb}));
-  root.append(h('div',{class:'tabbar'},item('play','🎮','Игра'),item('top','🏆','Топ'),h('button',{class:'tbc',textContent:'🪙',on:{click:()=>go('coin')}}),item('chat','💬','Чат'),item('acct','👤','Аккаунт')));
+  root.append(h('div',{class:'tabbar'},item('play','🎮','Игра'),item('top','🏆','Топ'),h('button',{class:'tbc',textContent:'🎲',on:{click:()=>go('games')}}),item('chat','💬','Чат'),item('acct','👤','Аккаунт')));
 }
 
 function regView(){
   const inp=h('input',{placeholder:'Имя или ник',maxLength:30,value:gname});
   root.append(h('div',{class:'card',style:'text-align:center'},h('div',{class:'fox',textContent:'🦊'}),h('h2',{},'Манат Квест'),h('p',{class:'muted'},'Проходи тесты, крути колесо, качай уровень и меняй баллы на манаты!'),inp,
-    h('button',{on:{click:async()=>{const n=inp.value.trim();if(n.length<2)return alert('Введи имя или ник');profile={name:n,points:0,xp:0,done:[],requests:[],streak:0,best:0,dayStreak:0};await save();await dailyLogin();render();}}},'Начать игру 🚀')));
+    h('button',{on:{click:async()=>{const n=inp.value.trim();if(n.length<2)return alert('Введи имя или ник');profile={name:n,points:0,xp:0,done:[],requests:[],streak:0,best:0,dayStreak:0};let ref=null;try{ref=localStorage.getItem('ref');}catch(e){}
+      if(ref&&ref!==uid){profile.refBy=ref;await db.doc('invites/'+uid).set({by:ref,name:n,at:Date.now()}).catch(()=>{});}
+      await save();await dailyLogin();render();}}},'Начать игру 🚀')));
 }
 
 function testsView(){
+  root.append(h('p',{class:'muted',textContent:'Пройдено: '+profile.done.filter(id=>tests.some(t=>t.id===id)).length+' из '+tests.length}));
   if(!tests.length)root.append(h('p',{class:'muted'},'Пока нет тестов. Заходи позже!'));
   tests.forEach(t=>{const done=profile.done.includes(t.id);
     root.append(h('div',{class:'card'},t.image?h('img',{class:'t',src:t.image}):null,h('h3',{},t.title),
@@ -198,7 +202,7 @@ function wheelView(){
     btn.disabled=true;playing=true;const idx=Math.floor(Math.random()*6);
     wheel.style.transition='transform 4s cubic-bezier(.15,.7,.1,1)';wheel.style.transform='rotate('+(360*6-(idx*60+30))+'deg)';
     setTimeout(async()=>{profile.points+=WHEEL[idx];profile.xp+=WHEEL[idx];profile.lastSpin=today();beep(660);confetti();toast('🎡 Выпало +'+WHEEL[idx]+' баллов!');playing=false;await save();render();},4200);}}});
-  root.append(h('div',{class:'card',style:'text-align:center'},h('h3',{},'Колесо удачи'),h('p',{class:'muted'},'Одно вращение в день'),h('div',{class:'wheelbox'},h('div',{class:'ptr',textContent:'🔻'}),wheel),btn));
+  root.append(h('div',{class:'card',style:'text-align:center'},h('p',{class:'muted'},'Одно вращение в день'),h('div',{class:'wheelbox'},h('div',{class:'ptr',textContent:'🔻'}),wheel),btn));
 }
 
 function pawSvg(){const ns='http://www.w3.org/2000/svg',svg=document.createElementNS(ns,'svg');svg.setAttribute('viewBox','0 0 100 100');svg.setAttribute('class','paw');
@@ -222,7 +226,7 @@ function coinView(){
       else{profile.points-=COIN_LOSE;beep(220);coinMsg='bad:😿 Не угадал: −'+COIN_LOSE+' баллов (выпала '+name+')';}
       playing=false;await save();render();},2800);
   }}});
-  root.append(h('div',{class:'card',style:'text-align:center'},h('h3',{},'Орёл и решка'),
+  root.append(h('div',{class:'card',style:'text-align:center'},
     h('p',{class:'muted'},'Угадал: +'+COIN_WIN+' баллов. Не угадал: −'+COIN_LOSE+'.'),
     h('div',{class:'coinbox'},coin),h('div',{class:'two'},b1,b2),h('div',{style:'height:10px'}),go,
     coinMsg?h('p',{class:coinMsg.startsWith('ok')?'ok':'bad',textContent:coinMsg.slice(coinMsg.indexOf(':')+1)}):null));
@@ -243,25 +247,109 @@ function chatView(){
   const send=async()=>{const t=inp.value.trim();if(!t||Date.now()-lastSent<2000)return;lastSent=Date.now();inp.value='';
     try{await db.collection('chat').add({uid,name:profile.name,text:t,at:Date.now()});}catch(e){alert('Не удалось отправить');}};
   inp.addEventListener('keydown',e=>{if(e.key==='Enter')send();});
-  root.append(h('div',{class:'card'},h('h3',{},'💬 Общий чат'),h('p',{class:'muted',textContent:'Будь вежлив. Не пиши здесь номер телефона.'}),chatBox,
+  root.append(h('div',{class:'card'},h('p',{class:'muted',textContent:'Будь вежлив. Не пиши здесь номер телефона.'}),chatBox,
     h('div',{class:'two',style:'grid-template-columns:1fr auto;margin-top:8px'},inp,h('button',{textContent:'➤',on:{click:send}}))));
   fillChat();
 }
 function go(k){if(playing&&!confirm('Выйти? Попытка сгорит.'))return;playing=false;view=k;openTest=null;render();window.scrollTo(0,0);}
 function acctView(){
-  const L=lvl(profile.xp),badges=[[profile.done.length>=1,'🥉 Первый тест'],[profile.best>=5,'🔥 Серия 5'],[profile.dayStreak>=3,'📅 3 дня подряд'],[L>=5,'💎 Уровень 5'],[profile.requests.length>=1,'💸 Первый вывод']].filter(b=>b[0]);
+  const L=lvl(profile.xp),base=40*(L-1)**2,next=40*L*L,pct=Math.min(100,(profile.xp-base)/(next-base)*100),manat=Math.floor(profile.points/POINTS_PER_MANAT);
+  const badges=[[profile.done.length>=1,'🥉 Первый тест'],[profile.best>=5,'🔥 Серия 5'],[profile.dayStreak>=3,'📅 3 дня подряд'],[L>=5,'💎 Уровень 5'],[profile.requests.length>=1,'💸 Первый вывод']].filter(b=>b[0]);
   const row=(t,fn)=>h('button',{class:'opt',textContent:t,on:{click:fn}});
-  root.append(h('div',{class:'card'},h('h3',{textContent:'👤 '+profile.name}),h('p',{class:'muted',textContent:'Лучшая серия: '+profile.best+' · Пройдено тестов: '+profile.done.length}),
+  root.append(h('div',{class:'hdr'},h('div',{class:'ava',textContent:(profile.name||'?')[0].toUpperCase()}),
+    h('div',{style:'flex:1;min-width:0'},h('b',{class:'nm',textContent:profile.name}),h('div',{class:'muted',textContent:'🔥 серия '+profile.streak+' · 📅 '+profile.dayStreak+' дн.'})),
+    h('span',{class:'lvl',textContent:'★ '+L+' уровень'})));
+  root.append(h('div',{class:'bal'},h('div',{class:'muted',textContent:'Твой баланс'}),h('div',{class:'big',textContent:'🪙 '+profile.points}),
+    h('div',{class:'muted',textContent:'≈ '+manat+' манат · '+POINTS_PER_MANAT+' баллов = 1 манат'}),
+    h('div',{class:'xp'},h('i',{style:'width:'+pct+'%'})),h('div',{class:'muted',textContent:'XP: '+profile.xp+' / '+next})));
+  root.append(h('div',{class:'quick'},h('button',{class:'lime',textContent:'▶ Играть',on:{click:()=>go('play')}}),h('button',{textContent:'⬇ Вывести',on:{click:()=>go('wallet')}})));
+  root.append(h('div',{class:'card'},h('p',{class:'muted',textContent:'Лучшая серия: '+profile.best+' · Пройдено тестов: '+profile.done.length}),
     badges.length?badges.map(b=>h('span',{class:'badge',textContent:b[1]})):h('p',{class:'muted',textContent:'Значков пока нет — проходи тесты!'})));
-  root.append(h('div',{class:'card'},row('🎡 Колесо удачи',()=>go('wheel')),row('💰 Вывод баллов',()=>go('wallet')),isAdmin?row('⚙️ Админ-панель',()=>go('admin')):null,row('🚪 Выйти',()=>auth.signOut())));
+  root.append(h('div',{class:'card'},row('👥 Друзья и приглашения',()=>go('friends')),row('🎡 Колесо удачи',()=>go('wheel')),row('💰 Вывод баллов',()=>go('wallet')),isAdmin?row('⚙️ Админ-панель',()=>go('admin')):null,row('🚪 Выйти',()=>auth.signOut())));
+}
+const PLAYS=5;
+const plays=g=>(profile.gdate===today()&&profile.gcount?profile.gcount[g]:0)||0, left=g=>PLAYS-plays(g);
+function usePlay(g){if(profile.gdate!==today()){profile.gdate=today();profile.gcount={};}profile.gcount[g]=(profile.gcount[g]||0)+1;}
+function addPts(n){profile.points+=n;profile.xp+=n;}
+async function refTasks(){
+  let ch=false;profile.claimed=profile.claimed||[];
+  if(profile.refBy&&!profile.refPaid&&profile.xp>=50){profile.refPaid=1;addPts(20);ch=true;setTimeout(()=>toast('🤝 Бонус за приглашение +20'),800);}
+  try{const sn=await db.collection('invites').where('by','==',uid).get();
+    for(const d of sn.docs){if(profile.claimed.includes(d.id)||profile.claimed.length>=20)continue;
+      const b=await db.doc('board/'+d.id).get();
+      if(b.exists&&b.data().xp>=50){profile.claimed.push(d.id);addPts(30);ch=true;setTimeout(()=>toast('🤝 Друг в игре! +30 баллов'),1500);}}
+  }catch(e){}
+  if(ch)await save();
+}
+function gamesView(){
+  const card=(ic,t,d,k)=>h('div',{class:'card'},h('h3',{textContent:ic+' '+t}),h('p',{class:'muted',textContent:d}),h('button',{textContent:'Играть',on:{click:()=>go(k)}}));
+  root.append(card('🪙','Орёл и решка','Палка или лапка: угадал +10, нет −5','coin'),card('🔢','Угадай число','Число от 1 до 100, 6 попыток','guess'),card('🧠','Память','Найди все пары за меньше ходов','memory'),card('⚡','Реакция','Жми, когда станет зелёным','react'),card('🎡','Колесо удачи','Одно вращение в день','wheel'));
+}
+function noPlays(){root.append(h('div',{class:'card',style:'text-align:center'},h('h3',{textContent:'На сегодня хватит 🌙'}),h('p',{class:'muted',textContent:'В каждой игре '+PLAYS+' игр в день. Приходи завтра!'})));}
+function guessView(){
+  const g='guess';if(left(g)<=0)return noPlays();
+  const target=1+Math.floor(Math.random()*100);let tries=6,over=false,started=false;
+  const info=h('p',{class:'muted',textContent:'Игр сегодня осталось: '+left(g)+' · Попыток: '+tries}),hint=h('p',{style:'font-weight:700'}),box=h('div');
+  const inp=h('input',{type:'number',placeholder:'Число от 1 до 100',inputMode:'numeric'});
+  const btn=h('button',{textContent:'Проверить',on:{click:async()=>{
+    if(over)return;const n=+inp.value;if(!(n>=1&&n<=100))return alert('Введи число от 1 до 100');
+    if(!started){started=true;playing=true;usePlay(g);}
+    tries--;inp.value='';
+    if(n===target){over=true;const w=Math.min(10,2+tries*2);addPts(w);beep(880);confetti();hint.className='ok';hint.textContent='🎉 Угадал! +'+w+' баллов';}
+    else if(tries<=0){over=true;beep(220);hint.className='bad';hint.textContent='Не угадал. Было число '+target;}
+    else{hint.className='';hint.textContent=n<target?'⬆ Больше':'⬇ Меньше';info.textContent='Игр сегодня осталось: '+left(g)+' · Попыток: '+tries;}
+    if(over){playing=false;box.append(h('button',{textContent:'Ещё раз',on:{click:()=>render()}}));}
+    await save();}}});
+  root.append(h('div',{class:'card'},h('p',{textContent:'Я загадал число от 1 до 100. Угадай!'}),info,inp,btn,hint,box));
+}
+function memoryView(){
+  const g='memory';if(left(g)<=0)return noPlays();
+  const em=['🍎','🚗','⚽','🎸','🐱','🌟'],cards=[...em,...em].sort(()=>Math.random()-.5);
+  let open=[],found=0,moves=0,lock=false,started=false;
+  const info=h('p',{class:'muted',textContent:'Игр сегодня осталось: '+left(g)+' · Ходы: 0'}),res=h('div'),grid=h('div',{class:'mgrid'}),els=[];
+  cards.forEach((e,i)=>{const c=h('button',{class:'mc',textContent:'❓'});els.push(c);c.onclick=async()=>{
+    if(lock||c.classList.contains('done')||open.includes(i))return;
+    if(!started){started=true;playing=true;usePlay(g);save();}
+    c.textContent=e;open.push(i);
+    if(open.length===2){moves++;info.textContent='Игр сегодня осталось: '+left(g)+' · Ходы: '+moves;const[a,b]=open;
+      if(cards[a]===cards[b]){els[a].classList.add('done');els[b].classList.add('done');open=[];found++;
+        if(found===6){const w=moves<=10?10:moves<=14?6:3;addPts(w);playing=false;beep(880);confetti();res.append(h('p',{class:'ok',textContent:'🎉 Готово за '+moves+' ходов! +'+w+' баллов'}),h('button',{textContent:'Ещё раз',on:{click:()=>render()}}));await save();}}
+      else{lock=true;setTimeout(()=>{els[a].textContent='❓';els[b].textContent='❓';open=[];lock=false;},800);}}};grid.append(c);});
+  root.append(h('div',{class:'card'},h('p',{textContent:'Открывай карточки и ищи пары. Чем меньше ходов, тем больше баллов.'}),info,grid,res));
+}
+function reactView(){
+  const g='react';if(left(g)<=0)return noPlays();
+  let state='idle',t0=0,timer=null;
+  const info=h('p',{class:'muted',textContent:'Игр сегодня осталось: '+left(g)}),res=h('p',{style:'font-weight:700'}),pad=h('div',{class:'pad',textContent:'Нажми, чтобы начать'});
+  pad.onclick=async()=>{
+    if(state==='idle'){if(left(g)<=0)return alert('На сегодня хватит. Приходи завтра!');
+      state='wait';playing=true;usePlay(g);save();info.textContent='Игр сегодня осталось: '+left(g);res.textContent='';pad.className='pad red';pad.textContent='Жди зелёного…';
+      timer=setTimeout(()=>{state='go';t0=performance.now();pad.className='pad green';pad.textContent='ЖМИ!';},1500+Math.random()*2500);}
+    else if(state==='wait'){clearTimeout(timer);state='idle';playing=false;pad.className='pad';pad.textContent='Слишком рано! Нажми, чтобы начать снова';res.className='bad';res.textContent='❌ 0 баллов';}
+    else if(state==='go'){const ms=Math.round(performance.now()-t0),w=ms<300?8:ms<450?5:2;state='idle';playing=false;addPts(w);beep(880);
+      pad.className='pad';pad.textContent='Нажми, чтобы сыграть снова';res.className='ok';res.textContent='⚡ '+ms+' мс — +'+w+' баллов';await save();}
+  };
+  root.append(h('div',{class:'card'},h('p',{textContent:'Нажми на поле. Когда оно станет зелёным, жми как можно быстрее.'}),info,pad,res));
+}
+function friendsView(){
+  const link=location.origin+location.pathname+'?ref='+uid,list=h('div',{},h('p',{class:'muted',textContent:'Загрузка…'}));
+  root.append(h('div',{class:'card'},h('p',{textContent:'Позови друга! Когда он наберёт 50 XP, ты получишь +30 баллов, а он +20.'}),h('input',{value:link,readOnly:true}),
+    h('div',{class:'two'},h('button',{textContent:'📋 Копировать',on:{click:async()=>{try{await navigator.clipboard.writeText(link);toast('Ссылка скопирована');}catch(e){prompt('Скопируй ссылку',link);}}}}),
+      h('button',{textContent:'📤 Поделиться',on:{click:()=>{if(navigator.share)navigator.share({title:'Манат Квест',text:'Играй и зарабатывай баллы!',url:link}).catch(()=>{});else prompt('Скопируй ссылку',link);}}}))));
+  root.append(h('div',{class:'card'},h('b',{textContent:'Мои друзья'}),list));
+  (async()=>{try{const sn=await db.collection('invites').where('by','==',uid).get();list.innerHTML='';
+    if(sn.empty){list.append(h('p',{class:'muted',textContent:'Пока никого. Отправь ссылку другу!'}));return;}
+    for(const d of sn.docs){const b=await db.doc('board/'+d.id).get(),xp=b.exists?b.data().xp:0,ok=(profile.claimed||[]).includes(d.id);
+      list.append(h('div',{class:'row'},h('span',{style:'flex:1',textContent:d.data().name||'Друг'}),h('span',{class:ok?'ok':'muted',textContent:ok?'✅ +30':'⏳ '+xp+'/50 XP'})));}
+  }catch(e){list.textContent='Не удалось загрузить';}})();
 }
 function topView(){
-  root.append(h('div',{class:'card'},h('h3',{},'🏆 Топ игроков'),board.length?board.map((b,i)=>h('div',{class:'row'},h('b',{textContent:['🥇','🥈','🥉'][i]||(i+1)+'.'}),h('span',{style:'flex:1',textContent:b.name}),h('span',{class:'muted',textContent:'ур. '+b.level+' · '+b.xp+' XP'}))):h('p',{class:'muted'},'Пока пусто — стань первым!')));
+  root.append(h('div',{class:'card'},board.length?board.map((b,i)=>h('div',{class:'row'},h('b',{textContent:['🥇','🥈','🥉'][i]||(i+1)+'.'}),h('span',{style:'flex:1',textContent:b.name}),h('span',{class:'muted',textContent:'ур. '+b.level+' · '+b.xp+' XP'}))):h('p',{class:'muted'},'Пока пусто — стань первым!')));
 }
 
 function walletView(){
   const manat=Math.floor(profile.points/POINTS_PER_MANAT),phone=h('input',{type:'tel',placeholder:'Твой номер телефона',inputMode:'tel'});
-  root.append(h('div',{class:'card'},h('h3',{},'💰 Обмен баллов'),h('p',{},POINTS_PER_MANAT+' баллов = 1 манат'),h('p',{},'Доступно: ',h('b',{},manat+' манат')),phone,
+  root.append(h('div',{class:'card'},h('p',{},POINTS_PER_MANAT+' баллов = 1 манат'),h('p',{},'Доступно: ',h('b',{},manat+' манат')),phone,
     h('button',{on:{click:async()=>{
       const num=phone.value.trim();
       if(manat<MIN_MANAT)return alert('Недостаточно баллов. Минимум: '+MIN_MANAT*POINTS_PER_MANAT);
