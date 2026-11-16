@@ -150,11 +150,11 @@ function render(){
   if(!profile)return regView();
   const L=lvl(profile.xp),base=40*(L-1)**2,next=40*L*L,pct=Math.min(100,(profile.xp-base)/(next-base)*100);
   const badges=[[profile.done.length>=1,'🥉 Первый тест'],[profile.best>=5,'🔥 Серия 5'],[profile.dayStreak>=3,'📅 3 дня подряд'],[L>=5,'💎 Уровень 5'],[profile.requests.length>=1,'💸 Первый вывод']].filter(b=>b[0]);
-  const titles={play:'🎮 Тесты',top:'🏆 Топ игроков',coin:'🪙 Орёл и решка',chat:'💬 Общий чат',wheel:'🎡 Колесо удачи',wallet:'💰 Вывод',admin:'⚙️ Админ-панель',acct:'👤 Аккаунт',games:'🎲 Мини-игры',guess:'🔢 Угадай число',memory:'🧠 Память',react:'⚡ Реакция',friends:'👥 Друзья',raffles:'🎁 Розыгрыши'};
+  const titles={play:'🎮 Тесты',top:'🏆 Топ игроков',coin:'🪙 Орёл и решка',chat:'💬 Общий чат',wheel:'🎡 Колесо удачи',wallet:'💰 Вывод',admin:'⚙️ Админ-панель',acct:'👤 Аккаунт',games:'🎲 Мини-игры',guess:'🔢 Угадай число',memory:'🧠 Память',friends:'👥 Друзья',raffles:'🎁 Розыгрыши'};
   root.append(h('div',{class:'bar'},h('h2',{textContent:titles[view]||''}),h('span',{class:'pts',textContent:'🪙 '+profile.points})));
-  if(['coin','guess','memory','react'].includes(view))root.append(h('button',{class:'gift',textContent:'← К играм',on:{click:()=>go('games')}}));
+  if(['coin','guess','memory'].includes(view))root.append(h('button',{class:'gift',textContent:'← К играм',on:{click:()=>go('games')}}));
   if(view==='play'&&!openTest&&profile.lastSpin!==today())root.append(h('button',{class:'gift',textContent:'🎁 Бесплатное колесо ждёт тебя!',on:{click:()=>go('wheel')}}));
-  ({play:()=>openTest?testView():testsView(),wheel:wheelView,acct:acctView,games:gamesView,guess:guessView,memory:memoryView,react:reactView,friends:friendsView,raffles:rafflesView,coin:coinView,top:topView,chat:chatView,wallet:walletView,admin:()=>isAdmin&&adminView(),out:()=>{view='play';auth.signOut();}})[view]();
+  ({play:()=>openTest?testView():testsView(),wheel:wheelView,acct:acctView,games:gamesView,guess:guessView,memory:memoryView,friends:friendsView,raffles:rafflesView,coin:coinView,top:topView,chat:chatView,wallet:walletView,admin:()=>isAdmin&&adminView(),out:()=>{view='play';auth.signOut();}})[view]();
   const act=['wheel','wallet','admin','friends','top'].includes(view)?'acct':view;
   const item=(k,ic,lb)=>h('button',{class:'tb'+(act===k?' on':''),on:{click:()=>go(k)}},h('span',{textContent:ic}),h('small',{textContent:lb}));
   root.append(h('div',{class:'tabbar'},item('play','🎮','Игра'),item('raffles','🎁','Призы'),h('button',{class:'tbc',textContent:'🎲',on:{click:()=>go('games')}}),item('chat','💬','Чат'),item('acct','👤','Аккаунт')));
@@ -285,7 +285,7 @@ async function refTasks(){
 }
 function gamesView(){
   const card=(ic,t,d,k)=>h('div',{class:'card'},h('h3',{textContent:ic+' '+t}),h('p',{class:'muted',textContent:d}),h('button',{textContent:'Играть',on:{click:()=>go(k)}}));
-  root.append(card('🪙','Орёл и решка','Палка или лапка: угадал +10, нет −5','coin'),card('🔢','Угадай число','Число от 1 до 100, 6 попыток','guess'),card('🧠','Память','Найди все пары за меньше ходов','memory'),card('⚡','Реакция','Жми, когда станет зелёным','react'),card('🎡','Колесо удачи','Одно вращение в день','wheel'));
+  root.append(card('🪙','Орёл и решка','Палка или лапка: угадал +10, нет −5','coin'),card('🔢','Угадай число','Число от 1 до 100, 6 попыток','guess'),card('🧠','Память','Найди 12 пар за 90 секунд','memory'),card('🎡','Колесо удачи','Одно вращение в день','wheel'));
 }
 function noPlays(){root.append(h('div',{class:'card',style:'text-align:center'},h('h3',{textContent:'На сегодня хватит 🌙'}),h('p',{class:'muted',textContent:'В каждой игре '+PLAYS+' игр в день. Приходи завтра!'})));}
 function guessView(){
@@ -306,32 +306,22 @@ function guessView(){
 }
 function memoryView(){
   const g='memory';if(left(g)<=0)return noPlays();
-  const em=['🍎','🚗','⚽','🎸','🐱','🌟'],cards=[...em,...em].sort(()=>Math.random()-.5);
-  let open=[],found=0,moves=0,lock=false,started=false;
-  const info=h('p',{class:'muted',textContent:'Игр сегодня осталось: '+left(g)+' · Ходы: 0'}),res=h('div'),grid=h('div',{class:'mgrid'}),els=[];
-  cards.forEach((e,i)=>{const c=h('button',{class:'mc',textContent:'❓'});els.push(c);c.onclick=async()=>{
-    if(lock||c.classList.contains('done')||open.includes(i))return;
-    if(!started){started=true;playing=true;usePlay(g);save();}
+  const em=['🍎','🚗','⚽','🎸','🐱','🌟','🍕','🚀','🎧','🐼','🏀','🍩'],cards=[...em,...em].sort(()=>Math.random()-.5);
+  let open=[],found=0,moves=0,lock=false,started=false,over=false,timer=null,t=90;
+  const info=h('p',{class:'muted'}),res=h('div'),grid=h('div',{class:'mgrid'}),els=[];
+  const upd=()=>{info.textContent='Игр сегодня: '+left(g)+' · Ходы: '+moves+' · ⏱ '+t+' с';};upd();
+  function finish(win){over=true;playing=false;clearInterval(timer);
+    if(win){const w=moves<=16?12:moves<=22?8:moves<=30?5:2;addPts(w);beep(880);confetti();res.append(h('p',{class:'ok',textContent:'🎉 Готово за '+moves+' ходов! +'+w+' баллов'}));}
+    else{beep(220);res.append(h('p',{class:'bad',textContent:'⏰ Время вышло. 0 баллов'}));}
+    res.append(h('button',{textContent:'Ещё раз',on:{click:()=>render()}}));save();}
+  cards.forEach((e,i)=>{const c=h('button',{class:'mc',textContent:'❓'});els.push(c);c.onclick=()=>{
+    if(lock||over||c.classList.contains('done')||open.includes(i))return;
+    if(!started){started=true;playing=true;usePlay(g);save();timer=setInterval(()=>{if(!c.isConnected){clearInterval(timer);return;}t--;upd();if(t<=0)finish(false);},1000);}
     c.textContent=e;open.push(i);
-    if(open.length===2){moves++;info.textContent='Игр сегодня осталось: '+left(g)+' · Ходы: '+moves;const[a,b]=open;
-      if(cards[a]===cards[b]){els[a].classList.add('done');els[b].classList.add('done');open=[];found++;
-        if(found===6){const w=moves<=10?10:moves<=14?6:3;addPts(w);playing=false;beep(880);confetti();res.append(h('p',{class:'ok',textContent:'🎉 Готово за '+moves+' ходов! +'+w+' баллов'}),h('button',{textContent:'Ещё раз',on:{click:()=>render()}}));await save();}}
-      else{lock=true;setTimeout(()=>{els[a].textContent='❓';els[b].textContent='❓';open=[];lock=false;},800);}}};grid.append(c);});
-  root.append(h('div',{class:'card'},h('p',{textContent:'Открывай карточки и ищи пары. Чем меньше ходов, тем больше баллов.'}),info,grid,res));
-}
-function reactView(){
-  const g='react';if(left(g)<=0)return noPlays();
-  let state='idle',t0=0,timer=null;
-  const info=h('p',{class:'muted',textContent:'Игр сегодня осталось: '+left(g)}),res=h('p',{style:'font-weight:700'}),pad=h('div',{class:'pad',textContent:'Нажми, чтобы начать'});
-  pad.onclick=async()=>{
-    if(state==='idle'){if(left(g)<=0)return alert('На сегодня хватит. Приходи завтра!');
-      state='wait';playing=true;usePlay(g);save();info.textContent='Игр сегодня осталось: '+left(g);res.textContent='';pad.className='pad red';pad.textContent='Жди зелёного…';
-      timer=setTimeout(()=>{state='go';t0=performance.now();pad.className='pad green';pad.textContent='ЖМИ!';},1500+Math.random()*2500);}
-    else if(state==='wait'){clearTimeout(timer);state='idle';playing=false;pad.className='pad';pad.textContent='Слишком рано! Нажми, чтобы начать снова';res.className='bad';res.textContent='❌ 0 баллов';}
-    else if(state==='go'){const ms=Math.round(performance.now()-t0),w=ms<300?8:ms<450?5:2;state='idle';playing=false;addPts(w);beep(880);
-      pad.className='pad';pad.textContent='Нажми, чтобы сыграть снова';res.className='ok';res.textContent='⚡ '+ms+' мс — +'+w+' баллов';await save();}
-  };
-  root.append(h('div',{class:'card'},h('p',{textContent:'Нажми на поле. Когда оно станет зелёным, жми как можно быстрее.'}),info,pad,res));
+    if(open.length===2){moves++;upd();const[a,b]=open;
+      if(cards[a]===cards[b]){els[a].classList.add('done');els[b].classList.add('done');open=[];found++;if(found===12)finish(true);}
+      else{lock=true;setTimeout(()=>{els[a].textContent='❓';els[b].textContent='❓';open=[];lock=false;},700);}}};grid.append(c);});
+  root.append(h('div',{class:'card'},h('p',{textContent:'12 пар за 90 секунд. Чем меньше ходов, тем больше баллов.'}),info,grid,res));
 }
 function friendsView(){
   const link=location.origin+location.pathname+'?ref='+uid,list=h('div',{},h('p',{class:'muted',textContent:'Загрузка…'}));
