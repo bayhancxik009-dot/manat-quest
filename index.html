@@ -5,23 +5,23 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Манат Квест 🦊</title>
 <style>
-:root{--bg:#120a2a;--card:#ffffff14;--line:#ffffff26;--text:#f4efff;--muted:#b6a9dd;--pink:#ff2d95;--cyan:#27e6ff;--gold:#ffc83d;--green:#3dff9a;--red:#ff5470;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+:root{--bg:#0a1235;--card:#141f4d;--line:#ffffff1f;--text:#f2f5ff;--muted:#9fb0e0;--pink:#3b7cff;--cyan:#c6f432;--gold:#ffc83d;--green:#c6f432;--red:#ff5470;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *{box-sizing:border-box}
-body{margin:0;color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:linear-gradient(135deg,#120a2a,#2a0a4a,#0a2a4a,#120a2a);background-size:300% 300%;animation:bg 14s ease infinite;min-height:100vh}
+body{margin:0;color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:linear-gradient(180deg,#0a1235,#0d1b4d 60%,#0a1235);min-height:100vh}
 @keyframes bg{50%{background-position:100% 100%}}
-#root{max-width:520px;margin:0 auto;padding:14px}
+#root{max-width:520px;margin:0 auto;padding:14px 14px 120px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;margin:10px 0;backdrop-filter:blur(6px)}
 .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .fox{font-size:2.6rem;animation:bob 2s ease-in-out infinite}
 @keyframes bob{50%{transform:translateY(-6px) rotate(-6deg)}}
 .pts{background:linear-gradient(90deg,var(--gold),#ff9a3d);color:#2b1700;font-weight:800;padding:6px 14px;border-radius:999px}
 .xp{height:12px;background:#ffffff1f;border-radius:99px;overflow:hidden;margin:6px 0}
-.xp>i{display:block;height:100%;background:linear-gradient(90deg,var(--cyan),var(--pink));transition:width .6s}
+.xp>i{display:block;height:100%;background:linear-gradient(90deg,#3b7cff,#c6f432);transition:width .6s}
 nav{display:flex;gap:5px;margin:10px 0;overflow-x:auto}
 nav button{flex:1;white-space:nowrap;background:var(--card);border:1px solid var(--line);padding:9px 6px;font-size:.85rem}
-nav button.on{background:linear-gradient(90deg,var(--pink),#9d4dff);border-color:transparent}
-button{font:inherit;color:#fff;background:linear-gradient(90deg,var(--pink),#9d4dff);border:0;border-radius:12px;padding:10px 14px;cursor:pointer;font-weight:600;transition:transform .1s}
+nav button.on{background:linear-gradient(90deg,#3b7cff,#2a5bd7);border-color:transparent}
+button{font:inherit;color:#fff;background:linear-gradient(90deg,#3b7cff,#2a5bd7);border:0;border-radius:12px;padding:10px 14px;cursor:pointer;font-weight:600;transition:transform .1s}
 button:active{transform:scale(.96)}
 button:disabled{opacity:.6}
 button.ghost{background:transparent;border:1px solid var(--red);color:var(--red)}
@@ -50,6 +50,24 @@ button.opt.sel{border-color:var(--cyan);background:#27e6ff33}
 .f2{transform:rotateY(180deg)}
 .stick{width:24px;height:104px;border-radius:14px;background:#3dff9a;box-shadow:0 0 18px #3dff9a,0 0 40px #3dff9a}
 .paw{width:100px;height:100px;filter:drop-shadow(0 0 10px #ff5fa8)}
+.chatbox{height:50vh;overflow-y:auto;display:flex;flex-direction:column;gap:6px;padding:4px}
+.msg{background:#ffffff14;border:1px solid var(--line);border-radius:12px;padding:6px 10px;max-width:85%;align-self:flex-start;overflow-wrap:anywhere}
+.msg.me{align-self:flex-end;background:#9d4dff44}
+.mh{font-size:.8rem;display:flex;gap:4px;align-items:center}
+button.x{padding:0 8px;margin-left:12px;border-radius:8px}
+.hdr{display:flex;align-items:center;gap:12px;margin:4px 0 10px}
+.ava{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#d96cff,#6a7bff);border:3px solid #5a6cff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.4rem}
+.nm{font-size:1.1rem}
+.lvl{background:#c6f432;color:#1b2a00;font-weight:800;padding:8px 14px;border-radius:999px;white-space:nowrap}
+.bal{background:#141f4d;border:1px solid var(--line);border-radius:20px;padding:16px;margin:8px 0}
+.big{font-size:2.4rem;font-weight:800;margin:4px 0}
+button.lime{background:#c6f432;color:#1b2a00}
+.quick{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}.quick button{padding:14px;font-size:1.05rem}
+button.gift{width:100%;background:#1d2b66;border:1px solid #c6f43266;color:#c6f432;margin:4px 0 8px}
+.tabbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(10px + env(safe-area-inset-bottom,0px));width:min(500px,calc(100% - 20px));background:#121b44;border:1px solid var(--line);border-radius:26px;display:grid;grid-template-columns:1fr 1fr 80px 1fr 1fr;align-items:end;padding:8px 6px;z-index:15;box-shadow:0 10px 30px #000a}
+.tb{background:none;border-radius:14px;padding:4px 0;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px;font-weight:500}
+.tb span{font-size:1.35rem}.tb small{font-size:.7rem}.tb.on{color:#c6f432}
+.tbc{width:68px;height:68px;border-radius:50%;margin:-36px auto 0;background:#c6f432;font-size:1.9rem;box-shadow:0 0 22px #c6f43299;border:5px solid #0a1235;padding:0;color:#000}
 </style>
 </head>
 <body>
@@ -68,7 +86,7 @@ const COIN_WIN=10, COIN_LOSE=5; // монета: угадал +10, не угад
 let coinMsg="";
 // =====================
 const root=document.getElementById('root');
-let auth,db,uid,gname='',unsubs=[],isAdmin=false,profile=null,tests=[],board=[],withdrawals=[],paid={},view='play',openTest=null,pRef,playing=false,timerId=null;
+let chat=[],chatBox=null,lastSent=0,auth,db,uid,gname='',unsubs=[],isAdmin=false,profile=null,tests=[],board=[],withdrawals=[],paid={},view='play',openTest=null,pRef,playing=false,timerId=null;
 function h(tag,props,...kids){const e=document.createElement(tag);for(const k in(props||{})){if(k==='on')for(const ev in props.on)e.addEventListener(ev,props.on[ev]);else if(k==='class')e.className=props[k];else if(k==='style')e.style.cssText=props[k];else e[k]=props[k];}kids.flat().forEach(c=>{if(c!=null&&c!==false)e.append(c)});return e;}
 const fmt=t=>new Date(t).toLocaleString('ru-RU'),today=()=>new Date().toISOString().slice(0,10),yest=()=>new Date(Date.now()-864e5).toISOString().slice(0,10);
 const lvl=xp=>Math.floor(Math.sqrt(xp/40))+1;
@@ -93,6 +111,7 @@ async function start(u){
     unsubs.forEach(f=>f());unsubs=[];
     unsubs.push(db.collection('tests').onSnapshot(sn=>{tests=sn.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.created||0)-(a.created||0));soft();},()=>soft()));
     unsubs.push(db.collection('board').onSnapshot(sn=>{board=sn.docs.map(d=>d.data()).sort((a,b)=>b.xp-a.xp).slice(0,10);soft();},()=>{}));
+    unsubs.push(db.collection('chat').orderBy('at','desc').limit(50).onSnapshot(sn=>{chat=sn.docs.map(d=>({id:d.id,...d.data()})).reverse();if(view==='chat'&&chatBox&&chatBox.isConnected)fillChat();},()=>{}));
     unsubs.push(db.collection('paid').onSnapshot(sn=>{paid={};sn.docs.forEach(d=>paid[d.id]=true);soft();},()=>{}));
     if(isAdmin)unsubs.push(db.collection('withdrawals').onSnapshot(sn=>{withdrawals=sn.docs.map(d=>({uid:d.id,...d.data()}));soft();},()=>{}));
     render();
@@ -123,13 +142,19 @@ function render(){
   if(!profile)return regView();
   const L=lvl(profile.xp),base=40*(L-1)**2,next=40*L*L,pct=Math.min(100,(profile.xp-base)/(next-base)*100);
   const badges=[[profile.done.length>=1,'🥉 Первый тест'],[profile.best>=5,'🔥 Серия 5'],[profile.dayStreak>=3,'📅 3 дня подряд'],[L>=5,'💎 Уровень 5'],[profile.requests.length>=1,'💸 Первый вывод']].filter(b=>b[0]);
-  root.append(h('div',{class:'card'},
-    h('div',{class:'top'},h('div',{class:'top'},h('span',{class:'fox',textContent:'🦊'}),h('div',{},h('b',{},profile.name),h('div',{class:'muted'},'Уровень '+L+' · 🔥 серия '+profile.streak))),h('span',{class:'pts',textContent:'🪙 '+profile.points})),
-    h('div',{class:'xp'},h('i',{style:'width:'+pct+'%'})),h('div',{class:'muted'},'XP: '+profile.xp+' / '+next),
-    badges.map(b=>h('span',{class:'badge',textContent:b[1]}))));
-  const tabs=[['play','🎮 Игра'],['wheel','🎡 Колесо'],['coin','🪙 Монета'],['top','🏆 Топ'],['wallet','💰 Вывод']];if(isAdmin)tabs.push(['admin','⚙️']);tabs.push(['out','🚪']);
-  root.append(h('nav',{},tabs.map(([k,l])=>h('button',{class:view===k?'on':'',on:{click:()=>{if(playing&&!confirm('Выйти? Попытка сгорит.'))return;playing=false;view=k;openTest=null;render();}}},l))));
-  ({play:()=>openTest?testView():testsView(),wheel:wheelView,coin:coinView,top:topView,wallet:walletView,admin:()=>isAdmin&&adminView(),out:()=>{view='play';auth.signOut();}})[view]();
+  const manat=Math.floor(profile.points/POINTS_PER_MANAT);
+  root.append(h('div',{class:'hdr'},h('div',{class:'ava',textContent:(profile.name||'?')[0].toUpperCase()}),
+    h('div',{style:'flex:1;min-width:0'},h('b',{class:'nm',textContent:profile.name}),h('div',{class:'muted',textContent:'🔥 серия '+profile.streak+' · 📅 '+profile.dayStreak+' дн.'})),
+    h('span',{class:'lvl',textContent:'★ '+L+' уровень'})));
+  root.append(h('div',{class:'bal'},h('div',{class:'muted',textContent:'Твой баланс'}),h('div',{class:'big',textContent:'🪙 '+profile.points}),
+    h('div',{class:'muted',textContent:'≈ '+manat+' манат · '+POINTS_PER_MANAT+' баллов = 1 манат'}),
+    h('div',{class:'xp'},h('i',{style:'width:'+pct+'%'})),h('div',{class:'muted',textContent:'XP: '+profile.xp+' / '+next})));
+  root.append(h('div',{class:'quick'},h('button',{class:'lime',textContent:'▶ Играть',on:{click:()=>go('play')}}),h('button',{textContent:'⬇ Вывести',on:{click:()=>go('wallet')}})));
+  if(view==='play'&&!openTest&&profile.lastSpin!==today())root.append(h('button',{class:'gift',textContent:'🎁 Бесплатное колесо ждёт тебя!',on:{click:()=>go('wheel')}}));
+  ({play:()=>openTest?testView():testsView(),wheel:wheelView,acct:acctView,coin:coinView,top:topView,chat:chatView,wallet:walletView,admin:()=>isAdmin&&adminView(),out:()=>{view='play';auth.signOut();}})[view]();
+  const act=['wheel','wallet','admin'].includes(view)?'acct':view;
+  const item=(k,ic,lb)=>h('button',{class:'tb'+(act===k?' on':''),on:{click:()=>go(k)}},h('span',{textContent:ic}),h('small',{textContent:lb}));
+  root.append(h('div',{class:'tabbar'},item('play','🎮','Игра'),item('top','🏆','Топ'),h('button',{class:'tbc',textContent:'🪙',on:{click:()=>go('coin')}}),item('chat','💬','Чат'),item('acct','👤','Аккаунт')));
 }
 
 function regView(){
@@ -201,6 +226,34 @@ function coinView(){
     h('p',{class:'muted'},'Угадал: +'+COIN_WIN+' баллов. Не угадал: −'+COIN_LOSE+'.'),
     h('div',{class:'coinbox'},coin),h('div',{class:'two'},b1,b2),h('div',{style:'height:10px'}),go,
     coinMsg?h('p',{class:coinMsg.startsWith('ok')?'ok':'bad',textContent:coinMsg.slice(coinMsg.indexOf(':')+1)}):null));
+}
+function fillChat(){
+  chatBox.innerHTML='';
+  if(!chat.length)chatBox.append(h('p',{class:'muted',textContent:'Пока нет сообщений. Напиши первым!'}));
+  chat.forEach(m=>{
+    chatBox.append(h('div',{class:'msg'+(m.uid===uid?' me':'')},
+      h('div',{class:'mh'},h('b',{textContent:m.name}),h('span',{class:'muted',textContent:new Date(m.at).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}),
+        isAdmin?h('button',{class:'ghost x',textContent:'✕',on:{click:()=>db.doc('chat/'+m.id).delete()}}):null),
+      h('div',{textContent:m.text})));});
+  chatBox.scrollTop=chatBox.scrollHeight;
+}
+function chatView(){
+  chatBox=h('div',{class:'chatbox'});
+  const inp=h('input',{placeholder:'Сообщение…',maxLength:300});
+  const send=async()=>{const t=inp.value.trim();if(!t||Date.now()-lastSent<2000)return;lastSent=Date.now();inp.value='';
+    try{await db.collection('chat').add({uid,name:profile.name,text:t,at:Date.now()});}catch(e){alert('Не удалось отправить');}};
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter')send();});
+  root.append(h('div',{class:'card'},h('h3',{},'💬 Общий чат'),h('p',{class:'muted',textContent:'Будь вежлив. Не пиши здесь номер телефона.'}),chatBox,
+    h('div',{class:'two',style:'grid-template-columns:1fr auto;margin-top:8px'},inp,h('button',{textContent:'➤',on:{click:send}}))));
+  fillChat();
+}
+function go(k){if(playing&&!confirm('Выйти? Попытка сгорит.'))return;playing=false;view=k;openTest=null;render();window.scrollTo(0,0);}
+function acctView(){
+  const L=lvl(profile.xp),badges=[[profile.done.length>=1,'🥉 Первый тест'],[profile.best>=5,'🔥 Серия 5'],[profile.dayStreak>=3,'📅 3 дня подряд'],[L>=5,'💎 Уровень 5'],[profile.requests.length>=1,'💸 Первый вывод']].filter(b=>b[0]);
+  const row=(t,fn)=>h('button',{class:'opt',textContent:t,on:{click:fn}});
+  root.append(h('div',{class:'card'},h('h3',{textContent:'👤 '+profile.name}),h('p',{class:'muted',textContent:'Лучшая серия: '+profile.best+' · Пройдено тестов: '+profile.done.length}),
+    badges.length?badges.map(b=>h('span',{class:'badge',textContent:b[1]})):h('p',{class:'muted',textContent:'Значков пока нет — проходи тесты!'})));
+  root.append(h('div',{class:'card'},row('🎡 Колесо удачи',()=>go('wheel')),row('💰 Вывод баллов',()=>go('wallet')),isAdmin?row('⚙️ Админ-панель',()=>go('admin')):null,row('🚪 Выйти',()=>auth.signOut())));
 }
 function topView(){
   root.append(h('div',{class:'card'},h('h3',{},'🏆 Топ игроков'),board.length?board.map((b,i)=>h('div',{class:'row'},h('b',{textContent:['🥇','🥈','🥉'][i]||(i+1)+'.'}),h('span',{style:'flex:1',textContent:b.name}),h('span',{class:'muted',textContent:'ур. '+b.level+' · '+b.xp+' XP'}))):h('p',{class:'muted'},'Пока пусто — стань первым!')));
